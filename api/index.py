@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse # New import
-from fastapi.staticfiles import StaticFiles # New import
+from fastapi.responses import FileResponse, JSONResponse # Added JSONResponse for debug
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
@@ -20,19 +20,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- NEW: Mount static files ---
-# This tells FastAPI to serve files from the 'static' directory
-# when requests come to paths starting with /static/ (e.g., /static/styles.css)
-# The 'directory="static"' refers to the 'static' folder at your project root.
+# Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# --- NEW: Serve index.html at the root URL ---
-# When a user visits the root of your application (e.g., https://your-app.vercel.app/),
-# this route will serve the index.html file.
+# Serve index.html at root
 @app.get("/")
 async def serve_frontend():
     # The path "static/index.html" is relative to your project root.
-    return FileResponse("static/index.html")
+    # Ensure 'static' folder is at the same level as 'api' and 'vercel.json'
+    file_path = "static/index.html"
+    if not os.path.exists(file_path):
+        # If index.html is not found, return a debug message instead of a blank page
+        return JSONResponse(
+            status_code=500,
+            content={"error": "index.html not found on server.", "checked_path": os.path.abspath(file_path)}
+        )
+    return FileResponse(file_path)
 
 # Health Check Endpoint
 @app.get("/api/health")
@@ -44,13 +47,47 @@ async def health_check():
 async def read_api_root():
     return {"message": "FastAPI backend is running at /api root!"}
 
-# Your original /api/generate POST endpoint (uncommented and restored)
-# Make sure to uncomment this and the pydantic/requests/os imports if they were commented out for testing
-from pydantic import BaseModel # Ensure this is imported if it was commented out
-# from dotenv import load_dotenv # Already imported above
-# import requests # Already imported above
-# import os # Already imported above
+# --- NEW: Debug Endpoint for Static Files ---
+@app.get("/api/debug-static")
+async def debug_static_files():
+    static_dir = "static"
+    debug_info = {}
 
+    # Check if the static directory exists
+    if not os.path.exists(static_dir):
+        debug_info["static_directory_exists"] = False
+        debug_info["message"] = f"Static directory '{static_dir}' not found at {os.path.abspath('.')}"
+        return JSONResponse(status_code=404, content=debug_info)
+
+    debug_info["static_directory_exists"] = True
+    debug_info["static_directory_absolute_path"] = os.path.abspath(static_dir)
+
+    # List contents of the static directory
+    try:
+        debug_info["static_directory_contents"] = os.listdir(static_dir)
+    except Exception as e:
+        debug_info["list_contents_error"] = str(e)
+
+    # Check for index.html specifically
+    index_html_path = os.path.join(static_dir, "index.html")
+    if os.path.exists(index_html_path):
+        debug_info["index_html_exists"] = True
+        debug_info["index_html_absolute_path"] = os.path.abspath(index_html_path)
+        try:
+            with open(index_html_path, "r") as f:
+                # Read first few lines to confirm content, avoid reading huge files
+                debug_info["index_html_first_lines"] = f.read(500) + "..."
+        except Exception as e:
+            debug_info["read_index_html_error"] = str(e)
+    else:
+        debug_info["index_html_exists"] = False
+        debug_info["message"] = f"index.html not found inside '{static_dir}'."
+
+    return JSONResponse(content=debug_info)
+# --- END NEW ---
+
+
+# Your original /api/generate POST endpoint (uncommented and restored)
 class RequestPayload(BaseModel):
     content: str
     prompt: str
