@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Study Assistant</title>
+  <style>
+    body { display: flex; margin: 0; font-family: Arial; height: 100vh; }
+    .sidebar {
+      width: 80px;
+      background: #333;
+      color: white;
+      padding: 10px;
+      writing-mode: vertical-lr;
+      text-align: center;
+      cursor: pointer;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      padding: 10px;
+    }
+    textarea {
+      flex: 1;
+      margin: 10px 0;
+      width: 100%;
+      resize: none;
+    }
+    #output {
+      flex: 1;
+      overflow-y: scroll;
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar" onclick="toggleModel()">Model: <span id="modelName">Gemini</span></div>
+  <div class="container">
+    <textarea id="content" rows="10" placeholder="Enter your study content..."></textarea>
+    <textarea id="prompt" rows="5" placeholder="Enter your instruction or prompt..."></textarea>
+    <button onclick="generate()">Generate</button>
+    <div id="output"></div>
+  </div>
+
+  <script>
+    let model = "gemini";
+    function toggleModel() {
+      model = model === "gemini" ? "llama" : "gemini";
+      document.getElementById("modelName").textContent = model.charAt(0).toUpperCase() + model.slice(1);
+    }
+
+    async function generate() {
+      const content = document.getElementById("content").value;
+      const prompt = document.getElementById("prompt").value;
+
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content, prompt, model })
+      });
+      const data = await res.json();
+      document.getElementById("output").innerText = data.output?.text || JSON.stringify(data.output);
+    }
+  </script>
+</body>
+</html>
