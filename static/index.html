@@ -1,179 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Study Assistant</title>
-  <!-- Tailwind CSS CDN for easy styling -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8" />
+  <title>Study Assistant</title>
   <style>
-    /* Custom styles for scrollbars and font */
     body {
-      font-family: 'Inter', sans-serif; /* Using Inter font for a modern look */
-      overflow: hidden; /* Prevent body scroll, let individual sections handle scrolling */
+      display: flex;
+      height: 100vh;
+      margin: 0;
+      font-family: sans-serif;
     }
-
-    /* Apply custom scrollbar styles to textareas and output div */
-    textarea, #output {
-      scrollbar-width: thin; /* Firefox */
-      scrollbar-color: #4f46e5 #e5e7eb; /* thumb and track color for Firefox */
+    .section {
+      flex: 1;
+      padding: 20px;
+      overflow-y: scroll;
+      border-right: 1px solid #ccc;
     }
-
-    /* Webkit (Chrome, Safari) scrollbar styles */
-    textarea::-webkit-scrollbar, #output::-webkit-scrollbar {
-      width: 8px; /* Width of the scrollbar */
+    #output-section {
+      border-right: none;
     }
-    textarea::-webkit-scrollbar-track, #output::-webkit-scrollbar-track {
-      background: #e5e7eb; /* Light gray track background */
-      border-radius: 10px; /* Rounded corners for the track */
+    #controls {
+      position: fixed;
+      left: 10px;
+      bottom: 10px;
+      background: #f3f3f3;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
     }
-    textarea::-webkit-scrollbar-thumb, #output::-webkit-scrollbar-thumb {
-      background-color: #4f46e5; /* Indigo thumb color */
-      border-radius: 10px; /* Rounded corners for the thumb */
-      border: 2px solid #e5e7eb; /* Padding around the thumb */
+    select, button {
+      margin-top: 10px;
+      width: 100%;
     }
   </style>
 </head>
-<body class="flex h-screen bg-gray-100 text-gray-800">
+<body>
 
-  <!-- Sidebar for Model Selection -->
-  <!-- This div allows switching between Gemini and LLaMA models -->
-  <div class="sidebar w-20 bg-indigo-800 text-white p-4 flex flex-col items-center justify-center
-              cursor-pointer rounded-r-lg shadow-lg transition-all duration-300 hover:bg-indigo-700"
-       onclick="toggleModel()">
-    <span class="text-xs font-semibold uppercase tracking-wider transform -rotate-90 origin-center whitespace-nowrap">Model:</span>
-    <span id="modelName" class="text-lg font-bold mt-4 transform -rotate-90 origin-center whitespace-nowrap">Gemini</span>
+  <div class="section">
+    <h2>Study Text</h2>
+    <textarea id="input-text" rows="20" style="width: 100%"></textarea>
   </div>
 
-  <!-- Main Content Container -->
-  <!-- This container holds the three main sections of the UI -->
-  <div class="container flex flex-col flex-1 p-6 space-y-4 overflow-hidden">
+  <div class="section">
+    <h2>Prompt</h2>
+    <textarea id="prompt" rows="20" style="width: 100%"></textarea>
+  </div>
 
-    <!-- Section 1: Study Content Input -->
-    <div class="flex-1 bg-white rounded-lg shadow-md p-4 flex flex-col">
-      <label for="content" class="text-lg font-semibold mb-2 text-indigo-700">Study Content</label>
-      <textarea id="content" rows="10" placeholder="Enter your study content here (e.g., notes, articles, book excerpts)..."
-                class="flex-1 w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500
-                       focus:border-transparent outline-none text-base transition-all duration-200"></textarea>
-    </div>
+  <div class="section" id="output-section">
+    <h2>Output</h2>
+    <pre id="output" style="white-space: pre-wrap"></pre>
+  </div>
 
-    <!-- Section 2: Prompt Input and Generate Button -->
-    <div class="flex-shrink-0 bg-white rounded-lg shadow-md p-4 flex flex-col">
-      <label for="prompt" class="text-lg font-semibold mb-2 text-indigo-700">Prompt / Instruction</label>
-      <textarea id="prompt" rows="5" placeholder="Tell the AI what to do with the content (e.g., 'Summarize this.', 'Explain this concept.', 'Generate quiz questions.')..."
-                class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500
-                       focus:border-transparent outline-none text-base transition-all duration-200"></textarea>
-      <button onclick="generate()" id="generateButton"
-              class="mt-4 px-6 py-3 bg-indigo-600 text-white font-bold rounded-md shadow-lg
-                     hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500
-                     focus:ring-offset-2 transition-all duration-200 flex items-center justify-center">
-        <span id="buttonText">Generate</span>
-        <!-- Loading Spinner (initially hidden) -->
-        <svg id="loadingSpinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden"
-             xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-      </button>
-    </div>
-
-    <!-- Section 3: Output Display -->
-    <div class="flex-1 bg-white rounded-lg shadow-md p-4 flex flex-col">
-      <label for="output" class="text-lg font-semibold mb-2 text-indigo-700">AI Output</label>
-      <div id="output" class="flex-1 w-full p-3 border border-gray-300 rounded-md bg-gray-50
-                              overflow-y-auto text-base leading-relaxed whitespace-pre-wrap">
-        Your AI-generated content will appear here.
-      </div>
-    </div>
-
+  <div id="controls">
+    <label for="model">Choose Model:</label>
+    <select id="model">
+      <option value="gemini">Gemini</option>
+      <option value="llama">LLaMA</option>
+    </select>
+    <button onclick="sendRequest()">Run</button>
   </div>
 
   <script>
-    // Initialize current model state (default to Gemini)
-    let currentModel = "gemini";
-
-    /**
-     * Toggles the active AI model between Gemini and LLaMA.
-     * Updates the text in the sidebar to reflect the current model.
-     */
-    function toggleModel() {
-      currentModel = currentModel === "gemini" ? "llama" : "gemini";
-      // Capitalize the first letter for display
-      document.getElementById("modelName").textContent = currentModel.charAt(0).toUpperCase() + currentModel.slice(1);
-    }
-
-    /**
-     * Handles the generation process:
-     * 1. Retrieves content and prompt from text areas.
-     * 2. Shows a loading indicator.
-     * 3. Makes an API call to the backend.
-     * 4. Displays the AI's response or an error message.
-     * 5. Hides the loading indicator.
-     */
-    async function generate() {
-      const content = document.getElementById("content").value;
+    async function sendRequest() {
+      const content = document.getElementById("input-text").value;
       const prompt = document.getElementById("prompt").value;
-      const outputDiv = document.getElementById("output");
-      const generateButton = document.getElementById("generateButton");
-      const buttonText = document.getElementById("buttonText");
-      const loadingSpinner = document.getElementById("loadingSpinner");
+      const model = document.getElementById("model").value;
 
-      // Basic input validation
-      if (!content.trim() || !prompt.trim()) {
-        outputDiv.innerHTML = '<p class="text-red-500">Please enter both study content and a prompt.</p>';
-        return; // Stop execution if inputs are empty
-      }
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content, prompt, model })
+      });
 
-      // --- Show Loading State ---
-      buttonText.textContent = "Generating...";
-      loadingSpinner.classList.remove("hidden"); // Show spinner
-      generateButton.disabled = true; // Disable button to prevent multiple clicks
-      outputDiv.innerHTML = '<p class="text-gray-500 animate-pulse">Generating response, please wait...</p>'; // Loading message
-
-      try {
-        // Make the API call to your FastAPI backend
-        // IMPORTANT: Use a relative path '/api/generate' for Vercel deployment.
-        // Vercel will correctly route this to your Python backend based on vercel.json.
-        const res = await fetch("/api/generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content, prompt, model: currentModel })
-        });
-
-        // Check if the HTTP response was successful (status code 2xx)
-        if (!res.ok) {
-          // If not OK, parse the error message from the backend
-          const errorData = await res.json();
-          // Display the backend's error detail or a generic message
-          throw new Error(errorData.detail || "An unknown error occurred on the server.");
-        }
-
-        // Parse the JSON response from the backend
-        const data = await res.json();
-
-        // Display the AI's output.
-        // The backend is expected to send an object like { "output": { "text": "..." } }
-        // or just { "output": "..." } if the text is directly the output.
-        if (data.output && data.output.text) {
-          outputDiv.innerHTML = data.output.text;
-        } else if (data.output) {
-          // Fallback if output is directly a string or other simple type
-          outputDiv.innerHTML = JSON.stringify(data.output, null, 2); // Pretty print JSON if it's an object
-        } else {
-          outputDiv.innerHTML = "No valid output received from the AI.";
-        }
-
-      } catch (error) {
-        // Catch any errors during the fetch operation or parsing
-        outputDiv.innerHTML = `<p class="text-red-500">Error: ${error.message}</p>`;
-        console.error("Generation error:", error); // Log error to console for debugging
-      } finally {
-        // --- Revert Loading State ---
-        buttonText.textContent = "Generate"; // Restore button text
-        loadingSpinner.classList.add("hidden"); // Hide spinner
-        generateButton.disabled = false; // Re-enable button
-      }
+      const data = await res.json();
+      document.getElementById("output").textContent = data.output.text || "No output received.";
     }
   </script>
+
 </body>
 </html>
