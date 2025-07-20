@@ -10,25 +10,28 @@
   <div class="flex h-full">
 
     <!-- Left Column -->
-    <div class="w-1/2 p-6 flex flex-col justify-between bg-white border-r border-gray-200 shadow-md">
+    <div class="w-1/2 p-6 flex flex-col justify-between bg-white border-r border-gray-200 shadow-md relative">
       
       <!-- Prompt Input -->
       <div>
         <h2 class="text-xl font-semibold mb-2">Prompt</h2>
         <textarea id="prompt" class="w-full h-28 p-3 border rounded-lg resize-none shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
       </div>
-      
+
       <!-- Output Display -->
       <div>
         <h2 class="text-xl font-semibold mb-2 mt-6">Output</h2>
         <div id="output" class="h-40 overflow-y-auto bg-gray-100 border rounded-lg p-3 text-sm font-mono shadow-inner"></div>
       </div>
 
-      <!-- Model Selection Button -->
-      <div class="mt-4">
-        <button onclick="toggleModel()" class="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow">
-          Select Model
-        </button>
+      <!-- Dropdown for Model Selection -->
+      <div class="absolute bottom-4 left-6">
+        <label for="modelSelect" class="block text-sm font-medium mb-1">Select Model</label>
+        <select id="modelSelect" onchange="handleModelChange()"
+          class="w-32 p-2 border border-gray-300 rounded-lg shadow-sm text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="gemini">Gemini</option>
+          <option value="llama">LLaMA</option>
+        </select>
       </div>
     </div>
 
@@ -50,9 +53,8 @@
   <script>
     let selectedModel = "gemini"; // default
 
-    function toggleModel() {
-      selectedModel = selectedModel === "gemini" ? "llama" : "gemini";
-      alert("Model switched to: " + selectedModel);
+    function handleModelChange() {
+      selectedModel = document.getElementById("modelSelect").value;
     }
 
     async function submitRequest() {
