@@ -1,12 +1,13 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse # Added JSONResponse for debug
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
 import requests
 import json
+from pathlib import Path # New import for robust path handling
 
 load_dotenv()
 
@@ -20,20 +21,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- Robust Path Resolution ---
+# Get the absolute path to the directory where this script (index.py) is located
+BASE_DIR = Path(__file__).resolve().parent
+# Construct the absolute path to the 'static' directory, assuming it's a sibling of 'api'
+STATIC_DIR = BASE_DIR.parent / "static"
+
 # Mount static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Use the robustly resolved STATIC_DIR
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # Serve index.html at root
 @app.get("/")
 async def serve_frontend():
-    # The path "static/index.html" is relative to your project root.
-    # Ensure 'static' folder is at the same level as 'api' and 'vercel.json'
-    file_path = "static/index.html"
-    if not os.path.exists(file_path):
-        # If index.html is not found, return a debug message instead of a blank page
+    # Use the robustly resolved path for index.html
+    file_path = STATIC_DIR / "index.html"
+    if not file_path.exists():
         return JSONResponse(
             status_code=500,
-            content={"error": "index.html not found on server.", "checked_path": os.path.abspath(file_path)}
+            content={"error": "index.html not found on server.", "checked_path": str(file_path.absolute())}
         )
     return FileResponse(file_path)
 
@@ -47,47 +53,44 @@ async def health_check():
 async def read_api_root():
     return {"message": "FastAPI backend is running at /api root!"}
 
-# --- NEW: Debug Endpoint for Static Files ---
+# Debug Endpoint for Static Files
 @app.get("/api/debug-static")
 async def debug_static_files():
-    static_dir = "static"
     debug_info = {}
 
-    # Check if the static directory exists
-    if not os.path.exists(static_dir):
+    # Check if the static directory exists using the robust path
+    if not STATIC_DIR.exists():
         debug_info["static_directory_exists"] = False
-        debug_info["message"] = f"Static directory '{static_dir}' not found at {os.path.abspath('.')}"
+        debug_info["message"] = f"Static directory '{STATIC_DIR}' not found."
         return JSONResponse(status_code=404, content=debug_info)
 
     debug_info["static_directory_exists"] = True
-    debug_info["static_directory_absolute_path"] = os.path.abspath(static_dir)
+    debug_info["static_directory_absolute_path"] = str(STATIC_DIR.absolute())
 
     # List contents of the static directory
     try:
-        debug_info["static_directory_contents"] = os.listdir(static_dir)
+        debug_info["static_directory_contents"] = [p.name for p in STATIC_DIR.iterdir()]
     except Exception as e:
         debug_info["list_contents_error"] = str(e)
 
     # Check for index.html specifically
-    index_html_path = os.path.join(static_dir, "index.html")
-    if os.path.exists(index_html_path):
+    index_html_path = STATIC_DIR / "index.html"
+    if index_html_path.exists():
         debug_info["index_html_exists"] = True
-        debug_info["index_html_absolute_path"] = os.path.abspath(index_html_path)
+        debug_info["index_html_absolute_path"] = str(index_html_path.absolute())
         try:
             with open(index_html_path, "r") as f:
-                # Read first few lines to confirm content, avoid reading huge files
                 debug_info["index_html_first_lines"] = f.read(500) + "..."
         except Exception as e:
             debug_info["read_index_html_error"] = str(e)
     else:
         debug_info["index_html_exists"] = False
-        debug_info["message"] = f"index.html not found inside '{static_dir}'."
+        debug_info["message"] = f"index.html not found inside '{STATIC_DIR}'."
 
     return JSONResponse(content=debug_info)
-# --- END NEW ---
 
 
-# Your original /api/generate POST endpoint (uncommented and restored)
+# Your original /api/generate POST endpoint
 class RequestPayload(BaseModel):
     content: str
     prompt: str
