@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse # New import
+from fastapi.staticfiles import StaticFiles # New import
 from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
@@ -18,18 +20,36 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- NEW: Mount static files ---
+# This tells FastAPI to serve files from the 'static' directory
+# when requests come to paths starting with /static/ (e.g., /static/styles.css)
+# The 'directory="static"' refers to the 'static' folder at your project root.
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# --- NEW: Serve index.html at the root URL ---
+# When a user visits the root of your application (e.g., https://your-app.vercel.app/),
+# this route will serve the index.html file.
+@app.get("/")
+async def serve_frontend():
+    # The path "static/index.html" is relative to your project root.
+    return FileResponse("static/index.html")
+
 # Health Check Endpoint
-# This endpoint will respond to GET requests at /api/health
-# It's useful for monitoring systems (like Vercel's own checks or external uptime monitors)
-# to ensure your API is alive and responsive.
 @app.get("/api/health")
 async def health_check():
     return {"status": "ok", "message": "FastAPI backend is healthy!"}
 
-# Simple Root Endpoint for Diagnosis (already added in previous iteration)
+# Simple Root Endpoint for Diagnosis (for /api)
 @app.get("/api")
-async def read_root():
-    return {"message": "FastAPI backend is running!"}
+async def read_api_root():
+    return {"message": "FastAPI backend is running at /api root!"}
+
+# Your original /api/generate POST endpoint (uncommented and restored)
+# Make sure to uncomment this and the pydantic/requests/os imports if they were commented out for testing
+from pydantic import BaseModel # Ensure this is imported if it was commented out
+# from dotenv import load_dotenv # Already imported above
+# import requests # Already imported above
+# import os # Already imported above
 
 class RequestPayload(BaseModel):
     content: str
