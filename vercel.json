@@ -1,4 +1,5 @@
 {
+  "version": 2,
   "builds": [
     {
       "src": "api/index.py",
@@ -11,7 +12,11 @@
       "dest": "api/index.py"
     },
     {
-      "src": "/(.*)",
+      "src": "/static/(.*)",
+      "dest": "static/$1"
+    },
+    {
+      "src": "/",
       "dest": "api/index.py"
     }
   ]

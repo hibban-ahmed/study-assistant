@@ -197,3 +197,11 @@ async def generate_response(data: RequestPayload):
         raise HTTPException(status_code=400, detail="Invalid model selected. Choose 'gemini' or 'llama'.")
 
     return {"output": response_data}
+
+# fallback for any undefined routes to serve frontend (optional for client-side routing)
+@app.get("/{full_path:path}")
+async def catch_all(full_path: str):
+    index_path = STATIC_DIR / "index.html"
+    if index_path.exists():
+        return FileResponse(index_path)
+    raise HTTPException(status_code=404, detail="Page not found.")
